@@ -17,7 +17,7 @@ def clean(text, newline=True, quote=True, bullet_point=True, dates=True,
     # Newlines we don't need - only
     if newline:
         text = re.sub(r'\n+', ' ', text)
-        # Remove the many " " that we replaced in the last steo
+        # Remove the many " " that we replaced in the last step
         text = text.strip()
         text = re.sub(r'\s\s+', ' ', text)
 
@@ -70,6 +70,24 @@ def clean(text, newline=True, quote=True, bullet_point=True, dates=True,
     return text
 
 
+# Give a description of metadata in the IPython Notebook
+# Requirements
+# Consider only English Tweets
+# Remove all URLs, @tags, whitespaces, newlines, whitespaces and whitespace characters, bracketed words, special characters, sentence within double quotes
+# Resolve the character encoding issue - â€˜
+# Replace , and ; by 'and'
+# Take care of HTML encodings - &amp - means &
+# Replace full stops in submissions and comments by an <EOS> token
+# Encode hashtags - umm..., how they can be encoded? Will have to study them closely. Save them in a separate column. They can be used as metadata to the nodes
+# If a double quote is found - only include the sentence within quotes
+# Expand all contractions
+# Remove full stops that aren't ellipsis
+
+
+def clean_twitter(text):
+    pass
+
+
 # Resolve Afinn Later
 # def afinn_sentiment_score(utterances):
 #     # Compute polarity scores and assign labels
@@ -83,6 +101,7 @@ def count_emojis(utterance):
     # return len(re.findall(pattern, utterance))
     emot_dict = emot_object.emoji(utterance)
     return len(emot_dict['value'])
+
 # OOP's Standard
 # class Utilities:
 #
@@ -150,4 +169,7 @@ def count_emojis(utterance):
 #         return self.text
 
 
-count_emojis("This is thumbs up: 👍, and this is thumbs up with dark skin tone: 👍🏿")
+# count_emojis("This is thumbs up: 👍, and this is thumbs up with dark skin tone: 👍🏿")
+# Example sentences for test:
+# "Why Bihar is the nucleus of arson &amp; loot for Agnipath Scheme?\n\nAfter some thought, I guess, I've found the answer. Tejaswi Yadav visited with RaGa to address â€˜Ideas of Indiaâ€™ event in London
+#  \n\nThe toolkit was hatched there,funds arranged &amp; RJD goons are creating ruckus. Your take?"
