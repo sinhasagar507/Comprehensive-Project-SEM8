@@ -1,5 +1,5 @@
 import re
-import emoji, emot
+import emot
 
 # from afinn import Afinn
 
@@ -73,19 +73,119 @@ def clean(text, newline=True, quote=True, bullet_point=True, dates=True,
 # Give a description of metadata in the IPython Notebook
 # Requirements
 # Consider only English Tweets
-# Remove all URLs, @tags, whitespaces, newlines, whitespaces and whitespace characters, bracketed words, special characters, sentence within double quotes
+# Remove all URLs, @tags, newlines, whitespace characters, bracketed words, special characters
+# If a sentence is within double quotes, only keep the context within the quotes. Remove other context for the time being
 # Resolve the character encoding issue - â€˜
 # Replace , and ; by 'and'
 # Take care of HTML encodings - &amp - means &
 # Replace full stops in submissions and comments by an <EOS> token
 # Encode hashtags - umm..., how they can be encoded? Will have to study them closely. Save them in a separate column. They can be used as metadata to the nodes
 # If a double quote is found - only include the sentence within quotes
+# Convert all non-PROPER NOUN characters to lowercase
 # Expand all contractions
 # Remove full stops that aren't ellipsis
 
 
-def clean_twitter(text):
-    pass
+# First letter of every sentence - Capital Letter
+# During tokenization, if the word is a proper noun, its first character should be in capital letters
+
+
+# Done List
+# URLs and tags
+# Remove one or more occurrence of spaces with " " - a single space
+
+
+# List of Special Characters to be treated: [~, ', !, @, #, $, %, ^, &, *, (, ), -, _, +, =, {, }, [, ], |, \, /, :, ;, ", ', <, >, ,, ., ?]
+# List of Special Characters to be removed: [%, ^, *, -, _, +, =, |, \, /, !]
+# Replace # with and. Treat hashtags separately
+# List of special characters that remain to be treated: [:, ;, ,, ., ?, !]
+
+def clean_twitter(text, urls=True, tags=True, newLine=True, ellipsis=True,
+                  ampersand=True, tilde=True, special_chars=True, dollar=True, commas_semicols=True,
+                  bracketed_phrases=True,
+                  quotation_marks=True, greater_than_less_than=True, question_mark_exclaim=True,
+                  character_encodings=True, trademark=True):
+    if urls:
+        text = re.sub("https?:\/\/(www\.)?(\w+)(\.\w+)\/\w*", "", text)
+
+    if tags:
+        text = re.sub("@\w+", "", text)
+
+    # Remove any character between newlines
+
+    # Remove "\n". One or more occurrences
+    if newLine:
+        text = re.sub("\n+", ".", text)
+        text = text.strip()
+    #
+    # # Remove "ellipsis"
+    if ellipsis:
+        text = re.sub("\.{2,}", "", text)
+
+    # Replace "&" with "and"
+    if ampersand:
+        text = re.sub("&", "and", text)
+
+    # Replace "~" with "about"
+    if tilde:
+        text = re.sub("~", "about", text)
+
+    # Remove the special_chars list: [%, ^, *, -, _, +, =, |, \, /, ?]
+    if special_chars:
+        spec_char_list = ['%', '^', '*', '-', '_', '+', '=', '|', '/', '?']
+        sent = ""
+        new_sent_tokens = []
+
+        for character in text:
+            if str(character) not in spec_char_list:
+                new_sent_tokens.append(character)
+
+        sent = sent.join(new_sent_tokens)
+        sent = sent.strip()
+        text = sent
+
+    # Rename $ as dollar
+    if dollar:
+        text = re.sub("$", "dollar", text)
+
+    # Remove brackets and any text enclosed within simple brackets, usually used for acronyms
+    if bracketed_phrases:
+        text = re.sub("\(\w+\)", "", text)
+
+    # If single quotes or double quotes have been used in tweets, encash their meaning for the time being. Don't include any other information
+    if quotation_marks:
+        text = re.sub("(\'|\")[a-zA-Z0-9\s+\.]*(\'|\")", "", text)
+
+    # For the time being, replace commas by "" and semicolons by "."
+    if commas_semicols:
+        text = re.sub("\,+", "", text)
+        text = re.sub("\;+", ".", text)
+
+    # Resolve '>' and '<'
+    # Replace these characters with their respective names
+    if greater_than_less_than:
+        text = re.sub("<", "is less than", text)
+        text = re.sub(">", "is greater than", text)
+        text = re.sub("<=", "is less than or equal to", text)
+        text = re.sub(">=", "is greater than or equal to", text)
+
+    # Remove commas and interjections for the time being
+    if question_mark_exclaim:
+        text = re.sub("(\?|\!)+", "", text)
+
+    # Resolve character encodings
+    if character_encodings:
+        text = re.sub("â|€|¦|â|€˜|€™", "", text)
+
+    # Remove trademark symbol
+    if trademark:
+        text = re.sub("\u2122", "", text)
+
+    return text
+
+
+text = "Such beautiful Taquiyya! #NupurSharma should be â€˜forgivenâ€™ for what? For quoting from the scriptures? And the call for forgiveness comes NOW? AFTER the violence is done? â€˜Nupur Sharma should be forgiven as per Islam, says Jamaat Ulama-e-Hindâ€™!  https://t.co/U3s6DAjhFi"
+print(clean_twitter(text))
 
 
 # Resolve Afinn Later
@@ -101,6 +201,7 @@ def count_emojis(utterance):
     # return len(re.findall(pattern, utterance))
     emot_dict = emot_object.emoji(utterance)
     return len(emot_dict['value'])
+
 
 # OOP's Standard
 # class Utilities:
@@ -173,3 +274,7 @@ def count_emojis(utterance):
 # Example sentences for test:
 # "Why Bihar is the nucleus of arson &amp; loot for Agnipath Scheme?\n\nAfter some thought, I guess, I've found the answer. Tejaswi Yadav visited with RaGa to address â€˜Ideas of Indiaâ€™ event in London
 #  \n\nThe toolkit was hatched there,funds arranged &amp; RJD goons are creating ruckus. Your take?"
+
+print(clean_twitter("Those standing by Mohammed Zubair whose posts mocking Hindu Gods are currently viral, are the same folks who want Nupur Sharma jailed or dead.\n\nZubair should learn to respect other religions before making coded racial appeals to Islamists to run riot when someone debates Islam."))
+
+pattern = "Such beautiful Taquiyya! #NupurSharma should be â€˜fo"
