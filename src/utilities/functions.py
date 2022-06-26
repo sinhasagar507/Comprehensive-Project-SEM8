@@ -1,63 +1,98 @@
+"""
+General Class Utility Functions
+"""
+
+# Import standard libraries
 import re
+
+# Import third-party libraries
 import emot
+import emoji
 import contractions as cm
 
-# from afinn import Afinn
+import nltk
+from nltk.stem import WordNetLemmatizer
 
-# Instantiate afinn
-# aff = Afinn()
+# Downloading the relevant libraries and dependencies in NLTK module for preprocessing
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('wordnet')
+nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
+nltk.download('omw-1.4')
 
-# Initialize emot object
-emot_object = emot.core.emot()
+emot_object = emot.core.emot()  # Initialize Emoji Object
+lemmatizer = WordNetLemmatizer()  # Initialize the NLTK Lemmatizer
 
 
-def clean(text, newline=True, quote=True, bullet_point=True, dates=True,
-          link=True, strikethrough=True, spoiler=True, heading=True, emoji=True, emoticon=True, condensed=True):
-    text = str(text)
+def extract_hashtags(utterance):
+    """ Returns all Twitter hashtags from a tweet
 
+    Store all hashtags from a tweet and store them in a separate column
+    """
+    hashtags_ls = re.findall("#\w+", utterance)
+    return hashtags_ls
+
+
+def extract_username_tags(utterance):
+    """ Returns all Username tags from a tweet
+
+    Store all tags from a tweet and store them in a separate column
+    """
+
+    username_tags = re.findall("@\w+", utterance)
+    return username_tags
+
+
+def clean_reddit(
+        text_reddit, newline=True, quote=True,
+        bullet_point=True, dates=True, link=True,
+        strikethrough=True, spoiler=True, heading=True,
+        emoj=True, emoticon=True, condensed=True):
     # Newlines we don't need - only
     if newline:
-        text = re.sub(r'\n+', ' ', text)
+        text_reddit = re.sub(r'\n+', ' ', text_reddit)
         # Remove the many " " that we replaced in the last step
-        text = text.strip()
-        text = re.sub(r'\s\s+', ' ', text)
+        text_reddit = text_reddit.strip()
+        text_reddit = re.sub(r'\s\s+', ' ', text_reddit)
 
-    # > are for the qouted texts from the main comment or the reply
+    # > are for the quoted texts from the main comment or the reply
     if quote:
-        text = re.sub(r'>', '', text)
+        text_reddit = re.sub(r'>', '', text_reddit)
 
     # Bullet points/asterisk are used for markdown like - bold/italic - Could create trouble in parsing? idk
     if bullet_point:
-        text = re.sub(r'\*', '', text)
-        text = re.sub('&amp;#x200B;', '', text)
+        text_reddit = re.sub(r'\*', '', text_reddit)
+        text_reddit = re.sub('&amp;#x200B;', '', text_reddit)
 
     # []() Link format then we remove both the tag/placeholder and the link
     if link:
-        text = re.sub(r"http\S+", '', text)
-        text = re.sub(r'\[.*?\]\(.*?\)', '', text)
+        text_reddit = re.sub(r"http\S+", '', text_reddit)
+        text_reddit = re.sub(r'\[.*?\]\(.*?\)', '', text_reddit)
 
     # Strikethrough
     if strikethrough:
-        text = re.sub('~', '', text)
+        text_reddit = re.sub('~', '', text_reddit)
 
     # Spoiler, which is used with < less-than (Preserves the text)
     if spoiler:
-        text = re.sub('&lt;', '', text)
-        text = re.sub(r'!(.*?)!', r'\1', text)
+        text_reddit = re.sub('&lt;', '', text_reddit)
+        text_reddit = re.sub(r'!(.*?)!', r'\1', text_reddit)
 
     # Heading to be removed as there are these markdown style features in reddit too
     if heading:
-        text = re.sub('#', '', text)
+        text_reddit = re.sub('#', '', text_reddit)
 
-    if emoji:
+    if emoj:
         # Implement the emoji scheme here
         # Implementing a Naive Emoji Scheme
         # Some associated libraries are EMOT and DEMOJI
-        text = emoji.demojize(text).replace(":", "").replace("_", "")
+        # text_reddit = emoji.demojize(text_reddit).replace(":", "").replace("_", "")
         # Makes more sense for the node feature but might as well import that function here if ready
+        pass
 
     if dates:
-        text = re.sub(r'(\d+/\d+/\d+)', '', text)
+        text_reddit = re.sub(r'(\d+/\d+/\d+)', '', text_reddit)
 
     if emoticon:
         # Implement the emoticon scheme here.
@@ -68,24 +103,20 @@ def clean(text, newline=True, quote=True, bullet_point=True, dates=True,
     # if contractions:
     # text = contractions.fix(text)
     # print("Running")
-    return text
+    return text_reddit
 
 
-# Requirements
-# Done List
-# URLs and tags
-# Remove one or more occurrence of spaces with " " - a single space
-
-
-# List of Special Characters to be treated: [~, ', !, @, #, $, %, ^, &, *, (, ), -, _, +, =, {, }, [, ], |, \, /, :, ;, ", ', <, >, ,, ., ?]
-# List of Special Characters to be removed: [%, ^, *, -, _, +, =, |, \, /, !]
-# Replace # with and. Treat hashtags separately
-# List of special characters that remain to be treated: [:, ;, ,, ., ?, !]
-
-def clean_twitter(text_twitter, urls=True, tags=True, newLine=True, ellipsis=True,
-                  ampersand=True, tilde=True, special_chars=True, dollar=True, commas_semicols=True,
-                  bracketed_phrases=True, contractions=True, quotation_marks=True, greater_than_less_than=True,
-                  question_mark_exclaim=True, character_encodings=True, trademark=True, condensed=True):
+def clean_twitter(
+        text_twitter, urls=True, tags=True,
+        newLine=True, ellipsis=True, ampersand=True,
+        tilde=True, special_chars=True, dollar=True,
+        commas_semicols=True, bracketed_phrases=True, contractions=True,
+        quotation_marks=True, greater_than_less_than=True, question_mark_exclaim=True,
+        character_encodings=True, trademark=True, condensed=True):
+    """ The Twitter Clean Methodology
+    Clean tweets after extracting all hashtags and username tags
+    Not comprehensive enough to capture all idiosyncrasies, but works most of the time
+    """
     if urls:
         url_pattern = "https?:\/\/(www\.)?(\w+)(\.\w+)\/\w*"
         text_twitter = re.sub(url_pattern, "", text_twitter)
@@ -112,7 +143,7 @@ def clean_twitter(text_twitter, urls=True, tags=True, newLine=True, ellipsis=Tru
 
     # Replace "&" with "and"
     if ampersand:
-        text_twitter = re.sub("&", "and", text_twitter)
+        text_twitter = text_twitter.replace("&amp", "")
 
     # Replace "~" with "about"
     if tilde:
@@ -172,91 +203,77 @@ def clean_twitter(text_twitter, urls=True, tags=True, newLine=True, ellipsis=Tru
     return text_twitter
 
 
-# Resolve Afinn Later
-# def afinn_sentiment_score(utterances):
-#     # Compute polarity scores and assign labels
-#     scores = [aff.score(utterance) for utterance in utterances]
-#     mean_score = mean(scores)
-#     return mean_score
+def convert_to_lower(text):
+    """ This function block performs twitter text normalization
+        Hate, HATE, haTE, etc.
+    """
+
+    exclude_tags_list = ['NN', 'NNS', 'NNP', 'NNPS']  # Check if the attached POS tags are correct or not
+    modified_text_ls = []
+
+    words = nltk.word_tokenize(text)  # Tokenize the sentence and extract POS tags
+
+    words = [lemmatizer.lemmatize(word) for word in words]  # Perform lemmatization if required
+    word_pos_tags = nltk.pos_tag(words)
+
+    for (word, tag) in word_pos_tags:
+        if tag not in exclude_tags_list:
+            word = word.lower()
+        modified_text_ls.append(word)
+
+    text = ' '.join(modified_text_ls)
+
+    return text
 
 
 def count_emojis(utterance):
-    # pattern = "^[0-9A-F]{3, }"
-    # return len(re.findall(pattern, utterance))
+    """ Counts the total number of emojis in an utterance
+
+    Can act a possible indicator of deception
+    """
     emot_dict = emot_object.emoji(utterance)
+
     return len(emot_dict['value'])
 
 
-# Observations
-#  Raw data was extracted from Twitter. Characters in Hindi and other regional languages had encoding issues. We removed them
-# OOP's Standard
-# class Utilities:
-#
-#     def __init__(self, text):
-#         self.text = text
-#
-#     def clean_again(self, newline=True, quote=True, bullet_point=True, dates=True, link=True, strikethrough=True,
-#                     spoiler=True, heading=True, emoji=True, emoticon=True, contraction=True):
-#
-#         self.text = str(self.text)
-#
-#         # Newlines we don't need - only
-#
-#         if newline:
-#             self.text = re.sub(r'\n+', ' ', self.text)
-#
-#             # Remove the many " " that we replaced in the last step
-#             self.text = self.text.strip()
-#             self.text = re.sub(r'\s\s+', ' ', self.text)
-#
-#         # > are for the quoted texts from the main comment or the reply
-#         if quote:
-#             self.text = re.sub(r'>', '', self.text)
-#
-#         # Bullet points/asterisk are used for markdown like - bold/italic - Could create trouble in parsing? idk
-#         if bullet_point:
-#             self.text = re.sub(r'\*', '', self.text)
-#             self.text = re.sub('&amp;#x200B;', '', self.text)
-#
-#         # []() Link format then we remove both the tag/placeholder and the link
-#         if link:
-#             self.text = re.sub(r"http\S+", '', self.text)
-#             self.text = re.sub(r'\[.*?\]\(.*?\)', '', self.text)
-#
-#         # Strikethrough
-#         if strikethrough:
-#             self.text = re.sub('~', '', self.text)
-#
-#         # Spoiler, which is used with < less-than (Preserves the text)
-#         if spoiler:
-#             self.text = re.sub('&lt;', '', self.text)
-#             self.text = re.sub(r'!(.*?)!', r'\1', self.text)
-#
-#         # Heading to be removed as there are these markdown style features in reddit too
-#         if heading:
-#             self.text = re.sub('#', '', self.text)
-#
-#         if emoji:
-#             # Implement the emoji scheme here.
-#             # Makes more sense for the node feature but might as well import that function here if ready
-#             pass
-#
-#         if dates:
-#             self.text = re.sub(r'(\d+/\d+/\d+)', '', self.text)
-#
-#         if emoticon:
-#             # Implement the emoticon scheme here.
-#             # Makes more sense for the node feature but might as well import that function here if ready
-#             pass
-#
-#         # Needs to be the last step in the process
-#         # if contractions:
-#         # text = contractions.fix(text)
-#         # print("Running")
-#         return self.text
+def cnt_modifiers(text):
+    """Count modifiers, i.e., adjectives and adverbs in an utterance
+    The function block can detect probable deceptive clues in tweets and reddit posts
+    """
+    adj_pos_tags = ['JJ', 'JJR', 'JJS']  # POS tags describing adjectives
+    adv_pos_tags = ['RB', 'RBR, RBS']  # POS tags for adverbs
+    words = nltk.word_tokenize(text)
+    word_tag_lst = nltk.pos_tag(words)
+    cnt_tags = 0
+    for (word, tag) in word_tag_lst:
+        if tag in adj_pos_tags or tag in adv_pos_tags:
+            cnt_tags += 1
+
+    return cnt_tags
 
 
-# count_emojis("This is thumbs up: 👍, and this is thumbs up with dark skin tone: 👍🏿")
-# Example sentences for test:
-# "Why Bihar is the nucleus of arson &amp; loot for Agnipath Scheme?\n\nAfter some thought, I guess, I've found the answer. Tejaswi Yadav visited with RaGa to address â€˜Ideas of Indiaâ€™ event in London
-#  \n\nThe toolkit was hatched there,funds arranged &amp; RJD goons are creating ruckus. Your take?"
+def pos_modal_vbs(text):
+    """ Count the list of all modal verbs that indicate possibility, but not certainty
+    The function block can detect probable deceptive clues in tweets and reddit posts
+    """
+    cnt_mods = 0
+    pos_modal_ls = ['shall', 'should', 'can', 'could', 'will', 'would', 'may', 'must',
+                    'might']  # List of 9 modal verbs indicating possibility
+
+    words = text.split(" ")
+    for word in words:
+        if word in pos_modal_vbs:
+            cnt_mods += 1
+    return cnt_mods
+
+
+# Count list of self-references
+def cnt_self_ref(text):
+    cnt_self = 0
+    words = text.split()
+    self_ref = ['I', 'me', 'mine', 'we', 'our', 'ours', 'us']  # Self-referencing pronouns
+
+    for word in words:
+        if word in self_ref:
+            cnt_self += 1
+    return cnt_self

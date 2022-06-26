@@ -21,3 +21,5 @@ wandb~=0.12.18
 transformers~=4.20.0
 torch~=1.11.0
 setuptools~=58.0.4
+nltk~=3.6.5
+emoji~=1.7.0
